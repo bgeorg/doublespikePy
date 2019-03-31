@@ -102,6 +102,16 @@ class Isodata:
         return ix
     
     
+    def find_denominator(self, isotopes):
+        """Method receives list of isotopes (e.g. [0,2,3,6] or [92, 94, 98, 100])
+        and looks for the index in el.isotopes of the most abundant isotope.
+        This will determine the most appropiate denominator isotope when calculating ratios, to
+        avoid dividing by small numbers."""
+        
+        denominator_index = (self.standard.tolist()).index(max([val for i,val in enumerate(self.standard) if i in isotopes]))
+        
+        return denominator_index
+    
         
     def mix_doublespike(self, single_spikes, spike_mixing_proportions):
         """This function receives inputs and performs spike mixing calculations:
