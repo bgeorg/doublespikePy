@@ -29,8 +29,7 @@ class Isodata:
         self.nratio = self.niso - 1
         self.nspikes = len(spikes)
         self.isoname = [str(x) + element for x in isotope]
-        self.isoindex = np.arange(self.niso)
-        self.revisoindex = isotope
+        
         
         
         
@@ -92,29 +91,37 @@ class Isodata:
         
         ind_info = [str(ix)+'->'+(label) for ix,label in enumerate(self.isoname)]
         print(f'Isotope indexing: {ind_info}')
-        print(f'{self.revisoindex}')
         
-       
+        
+    def get_isotope_index(self, isotope):
+        """Function receives list of isotopes, e.g. [204, 206, 208] and returns the index of
+        these isotopes as in el.isotopes"""
+        
+        ix = [i for i,val in enumerate(self.isotope) if val in isotope]
+        
+        return ix
+    
+    
         
     def mix_doublespike(self, single_spikes, spike_mixing_proportions):
         """This function receives inputs and performs spike mixing calculations:
             
             Arguments:
             -- self
-            -- single_spikes: list of the two single spikes, e.g. [0, 3]
+            -- single_spikes: list of the two single isotope spikes, e.g. [0, 3] or [204, 208]
                 will use the 0th and 3rd spike
             -- spike_mixing_proportions: float between 0 ... 1, e.g. 0.45
                 will give 0.45xspike1 + (1-0.45)*spike2
         """
-        spkA = self.spikes[single_spikes[0]]
-        spkB = self.spikes[single_spikes[-1]]
         
-        smp = spike_mixing_proportions
-        self.dspk_mix = (smp * spkA) + ((1-smp) * spkB)
+        #check for single_spikes input format and get index when isotope masses are used:
+        spike_index = [(max(single_spikes)<12) * single_spikes.copy() or self.get_isotope_index(single_spikes)][0]
+                
+        spkA = self.spikes[spike_index[0]]
+        spkB = self.spikes[spike_index[-1]]
         
-#        print(spkA)
-#        print(spkB)
-#        print(self.dspk_mix)
+        self.dspk_mix = (spike_mixing_proportions * spkA) + ((1-spike_mixing_proportions) * spkB)
+
         return self.dspk_mix
     
     
@@ -139,8 +146,6 @@ class Isodata:
         else:
             self.sam_spk_mix = (samp * self.standard) + (1-samp) * self.dspk_mix
             
-#        print(f'unfractionated mix: {(samp * self.standard) + (1-samp) * self.dspk_mix}')
-#        print(f'fractionated mix  : {self.sam_spk_mix}')
         return self.sam_spk_mix
 
 
