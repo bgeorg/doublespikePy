@@ -97,6 +97,7 @@ class Isodata:
         """Function receives list of isotopes, e.g. [204, 206, 208] and returns the index of
         these isotopes as in el.isotopes"""
         
+        
         ix = [i for i,val in enumerate(self.isotope) if val in isotope]
         
         return ix
@@ -108,7 +109,11 @@ class Isodata:
         This will determine the most appropiate denominator isotope when calculating ratios, to
         avoid dividing by small numbers."""
         
-        denominator_index = (self.standard.tolist()).index(max([val for i,val in enumerate(self.standard) if i in isotopes]))
+        #convert incoming list of arguments from list of isotopes to isotope indexes
+        isotope_list = [(max(isotopes)<12) * isotopes.copy() or self.get_isotope_index(isotopes)][0] 
+        
+        #enumerate incoming isotope index list agains self.standard and extract the index of most abundant isotope:
+        denominator_index = (self.standard.tolist()).index(max([val for i,val in enumerate(self.standard) if i in isotope_list]))
         
         return denominator_index
     
