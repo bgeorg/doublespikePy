@@ -199,6 +199,26 @@ class Isodata:
         self.measured = measured
         
         return measured
+    
+    
+    def set_ratio_space(self, inv_iso):
+        """ set_ratio_space() prepares the isotope ratios used for the inversion routine.
+        Method receives a list of 4 isotopes that are going to be used. If necessary, the list
+        is transformed into indexes, the denominator is determined and ratios are calculated.
+        Ratios: 
+            RxMeas, RyMeas, RzMeas from self.measured
+            RxSta,  RySta,  RzSta  from self.standard
+            RxDspk, RyDspk, RzDspk from self.dspk_mix
+        """
         
+        inversion_isotopes = [(max(inv_iso)<12) * inv_iso.copy() or self.get_isotope_index(inv_iso)][0]
+        
+        denominator_isotope = self.find_denominator(inversion_isotopes)
+        
+        numerators = list(filter(lambda a: a != denominator_isotope, inversion_isotopes))
 
+        print(f'inversion isotopes: {inversion_isotopes}')
+        print(f'denominator isotope: {denominator_isotope}')
+        print(f'numerator isotopes: {numerators}')
 
+        return inversion_isotopes, denominator_isotope, numerators
