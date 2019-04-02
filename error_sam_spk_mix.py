@@ -29,13 +29,13 @@ al = np.zeros((len(test_vector), 1))
 
 for i in range(len(test_vector)):
     
-    el.set_error_model(50, 12, 1e11, 300)
+    el.set_error_model(20, 8, 1e11, 300)
     
-    el.mix_doublespike([54,57], 0.5)
+    el.mix_doublespike([32,33], test_vector[i])
     
-    el.mix_sample_doublespike(test_vector[i], -0.2)
+    el.mix_sample_doublespike(0.5, -0.2)
     el.beam_simulation(1.8, 100)
-    el.set_ratio_space([54,56,57,58])
+    el.set_ratio_space([32,33,34,36])
     el.inversion_routine()
     al[i] = np.std(el.fractionation[:,0])
     #print(f'alpha = {np.mean(el.fractionation[:,0])}, beta = {np.mean(el.fractionation[:,1])}')
