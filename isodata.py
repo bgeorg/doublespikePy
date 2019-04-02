@@ -7,6 +7,7 @@ Class isodata contains all important elemental data, as well as some important m
 """
 
 import numpy as np
+import geometricfunctions as gmf
 
 class Isodata:
     
@@ -175,14 +176,14 @@ class Isodata:
             sample(i,:)=standard.*exp(-log(mass).*alpha(i));
             ple(i,:)=sample(i,:)./sum(sample(i,:));
         """
-        
-        measured_signal = np.zeros((cycles, self.niso))
-        measured_intensity = np.zeros((cycles, self.niso))
-        measured_variance = np.zeros((cycles, self.niso))
-        measured = np.zeros((cycles,self.niso))
+        self.cycles = cycles
+        measured_signal = np.zeros((self.cycles, self.niso))
+        measured_intensity = np.zeros((self.cycles, self.niso))
+        measured_variance = np.zeros((self.cycles, self.niso))
+        measured = np.zeros((self.cycles,self.niso))
         np.random.seed(40)
         
-        for i in range(cycles):
+        for i in range(self.cycles):
             
             measured_signal[i,:] = self.sam_spk_mix * np.exp(-np.log(self.mass)*beta)
             measured_signal[i,:] = measured_signal[i,:]/sum(measured_signal[i,:])
@@ -206,19 +207,102 @@ class Isodata:
         Method receives a list of 4 isotopes that are going to be used. If necessary, the list
         is transformed into indexes, the denominator is determined and ratios are calculated.
         Ratios: 
-            RxMeas, RyMeas, RzMeas from self.measured
-            RxSta,  RySta,  RzSta  from self.standard
-            RxDspk, RyDspk, RzDspk from self.dspk_mix
+            R_meas = [RxMeas, RyMeas, RzMeas] from self.measured
+            R_std  = [RxSta,  RySta,  RzSta ] from self.standard
+            R_spk  = [RxDspk, RyDspk, RzDspk] from self.dspk_mix
+            R_mass = [RxMass, RyMass, RzMass] from self.mass
         """
         
-        inversion_isotopes = [(max(inv_iso)<12) * inv_iso.copy() or self.get_isotope_index(inv_iso)][0]
+        self.inversion_isotopes = [(max(inv_iso)<12) * inv_iso.copy() or self.get_isotope_index(inv_iso)][0]
+        self.denominator = self.find_denominator(self.inversion_isotopes)
+        self.numerators = list(filter(lambda a: a != self.denominator, self.inversion_isotopes))
         
-        denominator_isotope = self.find_denominator(inversion_isotopes)
+        self.R_std = self.standard[(self.numerators)]/self.standard[(self.denominator)]
+        self.R_spk = self.dspk_mix[(self.numerators)]/self.dspk_mix[(self.denominator)]
+        self.R_mass = self.mass[(self.numerators)]/self.mass[(self.denominator)]
+        self.R_meas = np.zeros([self.cycles, len(self.numerators)])
         
-        numerators = list(filter(lambda a: a != denominator_isotope, inversion_isotopes))
+        
+        for i in range(self.cycles):
+            self.R_meas[i,:] = (self.measured[i,[self.numerators]]/self.measured[i,[self.denominator]])
 
-        print(f'inversion isotopes: {inversion_isotopes}')
-        print(f'denominator isotope: {denominator_isotope}')
-        print(f'numerator isotopes: {numerators}')
+    
+    
+    def inversion_routine(self, R_meas):
+        
+        beta = 3      # instrumental fractionation in #
+        alpha = 2   # natural fractionation 
+        
+    # start routine here: assign starting variables and isotope ratios
+    
+        for n in range (6): #for more iterations increase range
+            Rx1 = self.R_std[0]
+            Ry1 = self.R_std[1]
+            Rz1 = self.R_std[2]
+    
+            Rx2 = self.R_std[0] * (self.R_mass[0]) ** alpha
+            Ry2 = self.R_std[1] * (self.R_mass[1]) ** alpha
+            Rz2 = self.R_std[2] * (self.R_mass[2]) ** alpha
+        
+            # create line (a) - call geometric line function  
+            Pd,Pe,Pf,Pg = gmf.line(Rx1,Rx2,Ry1,Ry2,Rz1,Rz2)
+      
+        #store vaiables of line (a) for later intercept calc.
+            P1d = Pd
+            P1e = Pe
+            P1f = Pf
+            P1g = Pg
+    
+            Rx3 = self.R_spk[0]
+            Ry3 = self.R_spk[1]
+            Rz3 = self.R_spk[2]
+        
+        
+        # construct plane (A) - call geometric plane function
+            Pa,Pb,Pc = gmf.plane(Rx1,Rx2,Rx3,Ry1,Ry2,Ry3,Rz1,Rz2,Rz3)
+        
+          
+            for m in range (6): #(nested into n, for more iterations increase 1:m, where m = 2,3,4, ... x.)
+    
+                Rx1 = R_meas[0] #measured ratios
+                Ry1 = R_meas[1]
+                Rz1 = R_meas[2]
+    
+                Rx2 = R_meas[0] * (self.R_mass[0]) ** beta
+                Ry2 = R_meas[1] * (self.R_mass[1]) ** beta
+                Rz2 = R_meas[2] * (self.R_mass[2]) ** beta
+                
+                # create line (b) - call gemometric line function
+                Pd,Pe,Pf,Pg = gmf.line(Rx1,Rx2,Ry1,Ry2,Rz1,Rz2)
+                
+                #Intercept Plane (A) and line (b) call geometric intercept function
+                InX,InY,InZ = gmf.intercept(Pa,Pb,Pc,Pd,Pe,Pf,Pg)
+    
+                #calculate instrumental mass-bias
+                RMTRU = InX    #estimate of real mixture ratios
+               
+                beta = np.log(RMTRU/R_meas[0]) / np.log(self.R_mass[0]) #refine instrumental mass-bias from measured and real mixture ratios
+    
+       
+       #create plane (B) - call makeplane.m
+            Pa,Pb,Pc = gmf.plane(Rx1,Rx2,Rx3,Ry1,Ry2,Ry3,Rz1,Rz2,Rz3)
+        
+       #recall variables of line (a) 
+            Pd = P1d
+            Pe = P1e
+            Pf = P1f
+            Pg = P1g
+        
+       #Intercept line (a) with plane (B) call makeintercept.m
+            InX,InY,InZ = gmf.intercept(Pa,Pb,Pc,Pd,Pe,Pf,Pg)
+        
+       #calculate new alpha
+            RSTRU = InX #estimate of real sample ratio offset by natural fractionation alpha
+            alpha = np.log(RSTRU/self.R_std[0]) / np.log(self.R_mass[0]) # refine estimate of natrual fractionation
 
-        return inversion_isotopes, denominator_isotope, numerators
+        alpha = -alpha
+        beta = -beta
+       
+        
+        return [alpha, beta]
+      

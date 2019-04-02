@@ -24,5 +24,6 @@ el = isodata.Isodata(element_data)
 #create some testing scenarios
 el.set_error_model(18, 10, 1e11, 300)
 spk1 = el.mix_doublespike([98,100], 0.5)
-mix1 = el.mix_sample_doublespike(0.5)
+mix1 = el.mix_sample_doublespike(0.3, -0.5)
 meas = el.beam_simulation(-1.8, 50)
+el.set_ratio_space([1,2,5,6])
