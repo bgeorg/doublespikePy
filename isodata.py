@@ -10,6 +10,7 @@ import numpy as np
 #import geometricfunctions as gmf
 import inversion
 
+
 class Isodata:
     
     """Class Isodata.
@@ -134,7 +135,7 @@ class Isodata:
         
         self.dspk_mix = (spike_mixing_proportions * spkA) + ((1-spike_mixing_proportions) * spkB)
 
-        return self.dspk_mix
+        #return self.dspk_mix
     
     
     def mix_sample_doublespike(self, sample_spike_proportion, *alpha):
@@ -158,7 +159,7 @@ class Isodata:
         else:
             self.sam_spk_mix = (samp * self.standard) + (1-samp) * self.dspk_mix
             
-        return self.sam_spk_mix
+        #return self.sam_spk_mix
 
 
 
@@ -200,7 +201,7 @@ class Isodata:
             
         self.measured = measured
         
-        return measured
+        #return measured
     
     
     def set_ratio_space(self, inv_iso):
@@ -236,7 +237,7 @@ class Isodata:
         """
         
         
-        self.fractionation = np.zeros((self.cycles,2))
+        self.fractionation = np.zeros((self.cycles,3))
         
         for i in range(self.cycles):
             self.fractionation[i,:] = inversion.inversion(self, self.R_meas[i])
